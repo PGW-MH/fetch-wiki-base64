@@ -292,7 +292,7 @@ async function initializeApiClient() {
     apiStatusDiv.textContent = _t('namespaceInfoLoading');
     if (settings.apiEndpoint) {
         const headers = {};
-        if (settings.authKey) {
+        if (settings.authKey && settings.apiEndpoint.includes('huijiwiki.com')) {
             headers['X-authkey'] = settings.authKey;
         }
         sourceWiki = new MediaWikiApi(settings.apiEndpoint, { headers: headers });
@@ -543,14 +543,13 @@ async function fetchSingleFileInfo(filename) {
         const targetFilenameStandardized = fetchedFilenameRaw.replace(/^(?:File|文件|[^:]+):/i, 'File:');
 
         showMessage(fetchMessage, `Downloading ${filename}…`, 'info', true);
-        const huijiHeaders = new Headers();
-        if (settings.authKey) {
-            huijiHeaders.append('X-authkey', authKey);
+        const fetchOptions = { mode: 'cors' };
+        if (settings.authKey && settings.apiEndpoint.includes('huijiwiki.com')) {
+            const huijiHeaders = new Headers();
+            huijiHeaders.append('X-authkey', settings.authKey);
+            fetchOptions.headers = huijiHeaders;
         }
-        const fileBlobResponse = await fetch(fileUrl, {
-            headers: huijiHeaders,
-            mode: 'cors'
-        });
+        const fileBlobResponse = await fetch(fileUrl, fetchOptions);
         if (!fileBlobResponse.ok) {
             throw new Error(`HTTP error ${fileBlobResponse.status} downloading ${filename}`);
         }
