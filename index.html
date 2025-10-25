@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n-title="toolTitle">Wiki File Base64 Fetcher</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header>
+        <div class="header-left">
+            <div class="logo"></div>
+            <span class="title" data-i18n="toolTitle">Wiki File Base64 Fetcher</span>
+        </div>
+        <div class="header-right">
+            <button class="header-button" id="settings-button" aria-label="Settings" title="Settings">⚙️</button>
+            <button class="header-button theme-toggle" id="theme-toggle" aria-label="Toggle Theme">☀️</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <h2 data-i18n="step1Title">Step 1: Enter Filenames</h2>
+            <div id="api-status">Loading namespace info…</div>
+            <div class="form-group">
+                <label for="filenames-fetch" data-i18n="step1Label">Source wiki filenames (e.g., File:Wiki.png), one per line, max 10:</label>
+                <textarea id="filenames-fetch" rows="5"
+                    placeholder="File:Example1.jpg&#10;File:Example2.png"></textarea>
+            </div>
+            <div class="button-group">
+                <span id="file-size-info" style="margin-right: auto; font-size: 0.9em; color: #54595d;"></span>
+                <button id="fetch-button" class="button button-primary" data-i18n="fetchButtonText" disabled>Fetch file information</button>
+            </div>
+            <div id="fetch-message" class="message" style="display: none;"></div>
+        </div>
+
+        <div class="card" id="editor-card" style="display: none;">
+            <h2 data-i18n="step2Title">Step 2: Review & Edit</h2>
+            <div id="file-editors-container"></div>
+            <div class="button-group">
+                <button id="generate-json-button" class="button button-primary" data-i18n="generateJsonButtonText">Generate base64 JSON</button>
+            </div>
+        </div>
+
+        <div class="card" id="output-card" style="display: none;">
+            <h2 data-i18n="step3Title">Step 3: Copy JSON</h2>
+            <div class="form-group">
+                <label for="json-output" data-i18n="step3Label">Generated JSON (0 files, 0 MB):</label>
+                <textarea id="json-output" readonly></textarea>
+            </div>
+            <div class="button-group">
+                <button id="copy-json-button" class="button button-primary" data-i18n="copyJsonButtonText">Copy JSON</button>
+                <button id="goto-wiki-button" class="button" data-i18n="gotoWikiButtonText">Go to Pleasant Goat Wiki</button>
+            </div>
+            <div id="output-message" class="message" style="display: none;"></div>
+        </div>
+    </div>
+
+    <footer>
+        <span id="disclaimer"></span>
+    </footer>
+
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="close-settings-button">&times;</span>
+            <h2 data-i18n="settingsTitle">Settings</h2>
+            <div class="form-group">
+                <label for="setting-language" data-i18n="settingsLangLabel">Interface language:</label>
+                <select id="setting-language">
+                    <option value="en">English</option>
+                    <option value="zh">中文</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="setting-api-endpoint" data-i18n="settingsApiLabel">Source wiki API endpoint:</label>
+                <input type="text" id="setting-api-endpoint" placeholder="e.g., https://commons.wikimedia.org/w/api.php" required>
+                <small data-i18n="settingsApiHelp">Required. The Action API URL of the wiki to fetch files from.</small>
+            </div>
+            <div class="form-group">
+                <label for="setting-authkey" data-i18n="settingsAuthKeyLabel">X-authkey (Optional):</label>
+                <input type="text" id="setting-authkey" placeholder="Enter the authkey if required">
+                <small id="authkey-warning" class="message warning" style="display: none;" data-i18n="settingsAuthKeyWarn">Warning: huijiwiki.com API may require this parameter.</small>
+            </div>
+            <div class="button-group">
+                <button id="save-settings-button" class="button button-primary" data-i18n="settingsSaveButton">Save</button>
+            </div>
+            <div id="settings-message" class="message error" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script src="i18n.js"></script>
+    <script type="module" src="main.js"></script>
+</body>
+
+</html>
