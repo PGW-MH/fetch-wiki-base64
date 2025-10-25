@@ -543,7 +543,14 @@ async function fetchSingleFileInfo(filename) {
         const targetFilenameStandardized = fetchedFilenameRaw.replace(/^(?:File|文件|[^:]+):/i, 'File:');
 
         showMessage(fetchMessage, `Downloading ${filename}…`, 'info', true);
-        const fileBlobResponse = await fetch(fileUrl);
+        const huijiHeaders = new Headers();
+        if (settings.authKey) {
+            huijiHeaders.append('X-authkey', authKey);
+        }
+        const fileBlobResponse = await fetch(fileUrl, {
+            headers: huijiHeaders,
+            mode: 'cors'
+        });
         if (!fileBlobResponse.ok) {
             throw new Error(`HTTP error ${fileBlobResponse.status} downloading ${filename}`);
         }
