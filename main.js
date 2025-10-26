@@ -5,7 +5,7 @@ const TARGET_WIKI_PASTE_URL = 'https://xyy.miraheze.org/wiki/Special:Test/B';
 const DEFAULT_EMPTY_WIKITEXT = '== Summary ==\n{{fi|s=}}\n== Licensing ==\n{{fairuse}}';
 
 let currentLang = 'en';
-let settings = { lang: 'en', apiEndpoint: '', authKey: '' };
+let settings = { lang: 'en', apiEndpoint: '', authKey: '', replacementsText: '', replacementsObjJson: '{}' };
 let sourceWiki = null;
 let fetchedFilesData = [];
 let totalFetchedSize = 0;
@@ -22,6 +22,7 @@ const languageSelect = document.getElementById('setting-language');
 const apiEndpointInput = document.getElementById('setting-api-endpoint');
 const authKeyInput = document.getElementById('setting-authkey');
 const authKeyWarning = document.getElementById('authkey-warning');
+const replTextarea = document.getElementById('setting-replacements');
 const saveSettingsButton = document.getElementById('save-settings-button');
 const settingsMessage = document.getElementById('settings-message');
 const apiStatusDiv = document.getElementById('api-status');
@@ -52,6 +53,8 @@ const translations = {
         settingsApiHelp: 'Required. The Action API URL of the wiki to fetch files from.',
         settingsAuthKeyLabel: 'X-authkey (Optional):',
         settingsAuthKeyWarn: 'Warning: huijiwiki.com API may require this parameter.',
+        settingsReplLabel: 'Replacement list (one per line):',
+        settingsReplHelp: 'Each line should be exactly: "A":"B". Lines not matching will be ignored on save.',
         settingsSaveButton: 'Save',
         settingsApiMissing: 'API Endpoint cannot be empty. Settings not saved.',
         settingsSaved: 'Settings saved successfully!',
@@ -104,6 +107,8 @@ const translations = {
         settingsApiHelp: '必需。要获取文件的wiki的Action API URL。',
         settingsAuthKeyLabel: 'X-authkey（可选）：',
         settingsAuthKeyWarn: '警告：huijiwiki.com的API可能需要此参数。',
+        settingsReplLabel: '替换列表（每行一条）：',
+        settingsReplHelp: '每行请严格使用“"原文":"替换"”的格式；不符合的行将被忽略。',
         settingsSaveButton: '保存',
         settingsApiMissing: 'API端点不能为空。设置未保存。',
         settingsSaved: '设置已成功保存！',
@@ -200,6 +205,42 @@ async function blobToBase64(blob) {
     });
 }
 
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function applyReplacementsToFilename(inputFilename) {
+    try {
+        const replacementsObj = JSON.parse(settings.replacementsObjJson || '{}');
+        let out = inputFilename;
+
+        for (const [from, to] of Object.entries(replacementsObj)) {
+            if (!from) continue;
+            const re = new RegExp(escapeRegExp(from), 'g');
+            out = out.replace(re, ` ${to} `);
+        }
+
+        out = out.trim().replace(/\s+/g, ' ').replace('File: ', 'File:');
+        return out;
+    } catch (e) {
+        console.error('Failed to apply replacements:', e);
+        return inputFilename;
+    }
+}
+
+function reapplyReplacementsToExistingEditors() {
+    if (!fetchedFilesData || fetchedFilesData.length === 0) return;
+    for (const fileInfo of fetchedFilesData) {
+        const editorElement = document.getElementById(fileInfo.elementId);
+        if (!editorElement) continue;
+        const inputEl = editorElement.querySelector(`#${fileInfo.elementId}-filename`);
+        if (!inputEl) continue;
+        const currentVal = inputEl.value || '';
+        const newVal = applyReplacementsToFilename(currentVal);
+        inputEl.value = newVal;
+    }
+}
+
 function loadSettings() {
     const savedSettings = localStorage.getItem('wikiFetcherSettings');
     isInitialLoad = !savedSettings;
@@ -227,6 +268,7 @@ function loadSettings() {
     languageSelect.value = currentLang;
     apiEndpointInput.value = settings.apiEndpoint || '';
     authKeyInput.value = settings.authKey || '';
+    replTextarea.value = settings.replacementsText || '';
 
     initializeApiClient();
     updateUIStrings();
@@ -244,6 +286,31 @@ async function saveSettings() {
     settings.apiEndpoint = newApiEndpoint;
     settings.authKey = authKeyInput.value.trim();
 
+    const replacementsRaw = replTextarea.value || '';
+    settings.replacementsText = replacementsRaw;
+
+    function parseReplacementsTextToObj(text) {
+        const lines = text
+            .split('\n')
+            .map((l) => l.trim())
+            .filter((l) => l.length > 0);
+        const obj = {};
+        for (const line of lines) {
+            const m = line.match(/^"(.+?)"\s*:\s*"(.+?)"\s*$/);
+            if (m) {
+                const from = m[1];
+                const to = m[2];
+                obj[from] = to;
+            } else {
+                console.warn('Ignored replacement line (invalid format):', line);
+            }
+        }
+        return obj;
+    }
+
+    const replacementsObj = parseReplacementsTextToObj(replacementsRaw);
+    settings.replacementsObjJson = JSON.stringify(replacementsObj);
+
     try {
         localStorage.setItem('wikiFetcherSettings', JSON.stringify(settings));
         showMessage(settingsMessage, _t('settingsSaved'), 'success');
@@ -256,6 +323,7 @@ async function saveSettings() {
         currentLang = settings.lang;
         await initializeApiClient();
         updateUIStrings();
+        reapplyReplacementsToExistingEditors();
     } catch (e) {
         console.error('Failed to save settings:', e);
         showMessage(settingsMessage, 'Error saving settings to local storage.', 'error');
@@ -266,6 +334,7 @@ function openSettingsModal() {
     languageSelect.value = settings.lang || 'en';
     apiEndpointInput.value = settings.apiEndpoint || '';
     authKeyInput.value = settings.authKey || '';
+    replTextarea.value = settings.replacementsText || '';
     handleApiEndpointChange();
     settingsModal.style.display = 'flex';
     settingsMessage.style.display = 'none';
@@ -598,6 +667,11 @@ function displayFileEditor(fileInfo) {
                             </div>
                         `;
     fileEditorsContainer.appendChild(editorDiv);
+
+    const filenameInput = editorDiv.querySelector(`#${fileInfo.elementId}-filename`);
+    if (filenameInput) {
+        filenameInput.value = applyReplacementsToFilename(filenameInput.value || fileInfo.targetFilenameStandardized || '');
+    }
 
     const imgPreview = editorDiv.querySelector(`#${fileInfo.elementId}-preview`);
     imgPreview.onerror = () => {

@@ -85,6 +85,13 @@
                 <input type="text" id="setting-authkey" placeholder="Enter the authkey if required">
                 <small id="authkey-warning" class="message warning" style="display: none;" data-i18n="settingsAuthKeyWarn">Warning: huijiwiki.com API may require this parameter.</small>
             </div>
+            <div class="form-group">
+                <label for="setting-replacements" data-i18n="settingsReplLabel">Replacement list (one per line, format: "原文":"替换"):</label>
+                <textarea id="setting-replacements" rows="6" placeholder='e.g.,
+"奇侠大营救":"Martial World Rescue"
+"狂野新宇宙":"New Wild Cosmos"'></textarea>
+                <small data-i18n="settingsReplHelp">Each line should be exactly: "A":"B". Lines not matching will be ignored on save.</small>
+            </div>
             <div class="button-group">
                 <button id="save-settings-button" class="button button-primary" data-i18n="settingsSaveButton">Save</button>
             </div>
