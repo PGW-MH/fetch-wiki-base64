@@ -1,4 +1,4 @@
-import { MediaWikiApi } from 'https://unpkg.com/wiki-saikou?module';
+import { MediaWikiApi } from 'https://esm.sh/wiki-saikou';
 
 const MAX_FILES = 10;
 const TARGET_WIKI_PASTE_URL = 'https://xyy.miraheze.org/wiki/Special:Test/B';
